@@ -33,7 +33,7 @@ export function createFinnhub(deps: FinnhubDeps): ProviderAdapter {
       res = await fetchFn(url, { headers: { Accept: 'application/json' } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      throw new ProviderError('cors', `Browser request to Finnhub failed: ${msg}`, 'Check your connection or switch providers in Settings (P8).');
+      throw new ProviderError('cors', `Browser request to Finnhub failed: ${msg}`, 'Check your connection or switch providers in Settings.');
     }
     if (res.status === 429) {
       const retry = Number(res.headers.get('retry-after') ?? '60') * 1000;
@@ -110,7 +110,7 @@ export function createFinnhub(deps: FinnhubDeps): ProviderAdapter {
       });
       const price = r.c;
       if (typeof price !== 'number' || price <= 0) {
-        throw new ProviderError('not_found', `No quote for ${instrument.symbol}`, 'The symbol may be delisted (X2).');
+        throw new ProviderError('not_found', `No quote for ${instrument.symbol}`, 'The symbol may be delisted.');
       }
       return {
         price,

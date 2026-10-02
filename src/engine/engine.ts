@@ -311,7 +311,7 @@ export function validateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
   const acct = state.account;
   if (!acct) return { ok: false, reason: 'No account yet — finish onboarding first.' };
   if (draft.instrument.isIndex || draft.instrument.assetType === 'index') {
-    return { ok: false, reason: 'Real indices are not tradeable — use an ETF proxy instead (I3).' };
+    return { ok: false, reason: 'Real indices are not tradeable — use an ETF proxy instead.' };
   }
   if (!Number.isInteger(draft.qty) || draft.qty <= 0) {
     return { ok: false, reason: 'Quantity must be a whole number of shares (no fractional shares in v1).' };
@@ -348,10 +348,10 @@ export function validateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
   const native = draft.instrument.currency;
   if (native !== acct.baseCurrency) {
     if (!ctx.fx) {
-      return { ok: false, reason: `No FX rate ${native}→${acct.baseCurrency} available yet — trading is blocked until a fresh rate is fetched (F3).` };
+      return { ok: false, reason: `No FX rate ${native}→${acct.baseCurrency} available yet — trading is blocked until a fresh rate is fetched.` };
     }
     if (ctx.fx.stale) {
-      return { ok: false, reason: `FX rate ${native}→${acct.baseCurrency} is stale — trading is blocked until it refreshes (F3).` };
+      return { ok: false, reason: `FX rate ${native}→${acct.baseCurrency} is stale — trading is blocked until it refreshes.` };
     }
   }
 
@@ -365,7 +365,7 @@ export function validateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
     if (devBps > preset.priceBandBps) {
       return {
         ok: false,
-        reason: `Estimated price band exceeded: reference is ${devBps} bps from the previous close (limit ${preset.priceBandBps} bps). Exchanges halt trading outside these bands — order rejected (RM6).`,
+        reason: `Estimated price band exceeded: reference is ${devBps} bps from the previous close (limit ${preset.priceBandBps} bps). Exchanges halt trading outside these bands — order rejected.`,
       };
     }
   }
@@ -378,8 +378,8 @@ export function validateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
         ok: false,
         reason:
           held === 0
-            ? 'You do not hold this instrument. Short selling is not supported (E2).'
-            : `You hold ${held} share(s) but tried to sell ${draft.qty} (E2).`,
+            ? 'You do not hold this instrument. Short selling is not supported.'
+            : `You hold ${held} share(s) but tried to sell ${draft.qty}.`,
       };
     }
   } else {
@@ -391,7 +391,7 @@ export function validateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
         : '';
       return {
         ok: false,
-        reason: `Insufficient settled cash: need ${formatMinorShort(est.totalBaseMinor, acct.baseCurrency)} including costs, have ${formatMinorShort(wallet.settledMinor, acct.baseCurrency)}${hint} (E1).`,
+        reason: `Insufficient settled cash: need ${formatMinorShort(est.totalBaseMinor, acct.baseCurrency)} including costs, have ${formatMinorShort(wallet.settledMinor, acct.baseCurrency)}${hint}.`,
       };
     }
   }
@@ -520,8 +520,8 @@ export function estimateOrder(state: AppState, draft: OrderDraft, ctx: FillConte
   const wouldQueue = closed && draft.type === 'market';
   const queuedNotice = closed
     ? draft.type === 'market'
-      ? `Market is closed — this market order will fill at the next open on ${ctx.sessionDate} (M3).`
-      : `Market is closed — this ${draft.type.replace('_', '-')} order will be evaluated against the next session's prices (M3).`
+      ? `Market is closed — this market order will fill at the next open on ${ctx.sessionDate}.`
+      : `Market is closed — this ${draft.type.replace('_', '-')} order will be evaluated against the next session's prices.`
     : null;
 
   const settlementAvailableAt =
@@ -687,7 +687,7 @@ export function placeOrder(state: AppState, draft: OrderDraft, ctx: FillContext)
     const waiting: Order = {
       ...order,
       status: 'waiting_data',
-      waitingReason: 'Live quote is stale — waiting for fresh data before filling (R4).',
+      waitingReason: 'Live quote is stale — waiting for fresh data before filling.',
     };
     return { state: { ...state, orders: [...state.orders, waiting] }, order: waiting, fill: null };
   }
@@ -713,10 +713,10 @@ export function placeOrder(state: AppState, draft: OrderDraft, ctx: FillContext)
     expiresAtUtc: expiry,
     waitingReason:
       !ctx.marketOpen && draft.type === 'market'
-        ? 'Waiting for the next session open (R2).'
+        ? 'Waiting for the next session open.'
         : draft.type === 'market'
-          ? 'Waiting for data (R4).'
-          : 'Waiting for the price condition to trigger (R3).',
+          ? 'Waiting for data.'
+          : 'Waiting for the price condition to trigger.',
   };
   return { state: { ...state, orders: [...state.orders, queued] }, order: queued, fill: null };
 }

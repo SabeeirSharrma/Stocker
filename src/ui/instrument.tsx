@@ -121,7 +121,7 @@ export function InstrumentDetail({
                   />{' '}
                   <span className="dim tiny">
                     at 1 {instrument.currency} = {fx ? fx.rate.toFixed(6) : '—'} {base}{' '}
-                    {fx?.stale && <span className="badge warn">stale FX (F3)</span>}
+                    {fx?.stale && <span className="badge warn">stale FX</span>}
                   </span>
                 </div>
               )}
@@ -150,13 +150,13 @@ export function InstrumentDetail({
 
         {instrument.isIndex && (
           <div className="notice info small">
-            <strong>Read-only reference data (I3).</strong> Indices cannot be bought — search for a fund that tracks it instead.
+            <strong>Read-only reference data.</strong> Indices cannot be bought — search for a fund that tracks it instead.
           </div>
         )}
 
         {!st.isOpenNow && (
           <div className="notice info small">
-            Market closed. Orders placed now <strong>queue for the next session</strong> and fill at that session's open (M3/R2).
+            Market closed. Orders placed now <strong>queue for the next session</strong> and fill at that session's open.
           </div>
         )}
 
@@ -219,12 +219,12 @@ export function InstrumentDetail({
             <h2>Your position</h2>
             <div className="kv"><span className="k">Quantity</span><span className="v">{num(row.qty)} sh</span></div>
             <div className="kv"><span className="k">Value</span><span className="v"><Money minor={row.valueBaseMinor} currency={base} /></span></div>
-            <div className="kv"><span className="k">Cost basis (avg cost, V3)</span><span className="v"><Money minor={row.costBaseMinor} currency={base} /></span></div>
+            <div className="kv"><span className="k">Cost basis (avg cost)</span><span className="v"><Money minor={row.costBaseMinor} currency={base} /></span></div>
             <div className="kv">
               <span className="k">Open P&amp;L (<Term id="unrealized">unrealized</Term>)</span>
               <span className="v"><Pnl minor={row.unrealizedMinor} currency={base} /></span>
             </div>
-            {row.fxStale && <div className="notice warn small">FX rate for {instrument.currency} is stale — the value may be out of date (F3).</div>}
+            {row.fxStale && <div className="notice warn small">FX rate for {instrument.currency} is stale — the value may be out of date.</div>}
           </div>
         )}
 

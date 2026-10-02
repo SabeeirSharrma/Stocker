@@ -6,7 +6,7 @@ import { useRef, useState } from 'react';
 import type { AppStore } from '../state/store';
 import type { ProviderId } from '../data/provider';
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT, DISCLOSURE_DATA_LABEL, KNOWN_LIMITS } from '../teaching/content';
-import { TopBar, useStore } from './common';
+import { Term, TopBar, useStore } from './common';
 
 const DISPLAY_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'HKD', 'CAD', 'AUD'];
 
@@ -25,6 +25,7 @@ export function Settings({ store }: { store: AppStore }) {
   const [confirmReset, setConfirmReset] = useState<'off' | 'ask' | 'final'>('off');
   const [includeKeys, setIncludeKeys] = useState(!!s?.includeKeysInExport);
   const fileRef = useRef<HTMLInputElement>(null);
+  const requiresKey = store.providers().find((p) => p.id === providerId)?.requiresKey ?? true;
 
   async function run(fn: () => Promise<void>, okMsg?: string) {
     setBusy(true);
@@ -45,7 +46,7 @@ export function Settings({ store }: { store: AppStore }) {
     let include = includeKeys;
     if (includeKeys) {
       const ok = window.confirm(
-        'Include API keys in this file?\n\nKeys are secrets: only do this on your own private device, and delete the file once imported elsewhere (P2).\n\nCancel exports WITHOUT keys.',
+        'Include API keys in this file?\n\nKeys are secrets: only do this on your own private device, and delete the file once imported elsewhere.\n\nCancel exports WITHOUT keys.',
       );
       if (!ok) include = false;
     }
@@ -67,7 +68,7 @@ export function Settings({ store }: { store: AppStore }) {
     await run(async () => {
       await store.importJson(text);
       setImportText('');
-    }, 'Backup imported and validated — state replaced atomically (A4).');
+    }, 'Backup imported and validated — state replaced atomically.');
   }
 
   function onFile(file: File | undefined) {
@@ -95,10 +96,10 @@ export function Settings({ store }: { store: AppStore }) {
               aria-describedby="realism-desc"
             />
             <span>
-              <strong>Realism Mode (RM1)</strong>
+              <strong>Realism Mode</strong>
               <div id="realism-desc" className="tiny dim">
-                Applies itemised costs, <abbr title="difference between bid and ask">spread</abbr>, slippage and
-                settlement delays. Off = idealised fills (clearly labelled).
+                Applies itemised costs, <Term id="spread">spread</Term>, <Term id="slippage">slippage</Term> and
+                <Term id="settlement">settlement</Term> delays. Off = idealized fills (clearly labelled).
               </div>
             </span>
           </label>
@@ -109,12 +110,12 @@ export function Settings({ store }: { store: AppStore }) {
               onChange={(e) => void store.updateSettings({ deductTaxFromWallet: e.target.checked })}
             />
             <span>
-              <strong>Deduct estimated tax from the wallet on sells (RM8)</strong>
+              <strong>Deduct estimated tax from the wallet on sells</strong>
               <div className="tiny dim">Off by default — tax figures are estimates, not filings.</div>
             </span>
           </label>
           <div className="field" style={{ marginTop: 8 }}>
-            <label htmlFor="bench">Benchmark instrument (T4)</label>
+            <label htmlFor="bench">Benchmark instrument</label>
             <div className="row">
               <input
                 id="bench"
@@ -139,7 +140,7 @@ export function Settings({ store }: { store: AppStore }) {
 
         {/* -------------------------------------------------------- currency */}
         <div className="card">
-          <h2>Currency &amp; locale (W3)</h2>
+          <h2>Currency &amp; locale</h2>
           <div className="field">
             <label htmlFor="basec">Base currency (your wallet)</label>
             <input id="basec" value={acct?.baseCurrency ?? ''} readOnly className="dim" />
@@ -166,7 +167,7 @@ export function Settings({ store }: { store: AppStore }) {
 
         {/* --------------------------------------------------------- provider */}
         <div className="card">
-          <h2>Market data provider (P4)</h2>
+          <h2>Market data provider</h2>
           <div className="field">
             <label htmlFor="prov">Provider</label>
             <select id="prov" value={providerId} onChange={(e) => setProviderId(e.target.value as ProviderId)}>
@@ -175,35 +176,41 @@ export function Settings({ store }: { store: AppStore }) {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="k">API key {store.hasApiKey(providerId) ? '(a key is stored on this device)' : '(none stored)'}</label>
-            <div className="row">
-              <input
-                id="k"
-                type="password"
-                autoComplete="off"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={store.hasApiKey(providerId) ? '•••••••• (enter to replace)' : 'paste your key'}
-              />
-              <button
-                className="btn"
-                disabled={busy || !apiKey.trim()}
-                onClick={() =>
-                  void run(async () => {
-                    await store.setApiKey(providerId, apiKey.trim());
-                    setApiKey('');
-                  }, 'Key saved to this device only.')
-                }
-              >
-                Save
-              </button>
+          {requiresKey ? (
+            <div className="field">
+              <label htmlFor="k">API key {store.hasApiKey(providerId) ? '(a key is stored on this device)' : '(none stored)'}</label>
+              <div className="row">
+                <input
+                  id="k"
+                  type="password"
+                  autoComplete="off"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={store.hasApiKey(providerId) ? '•••••••• (enter to replace)' : 'paste your key'}
+                />
+                <button
+                  className="btn"
+                  disabled={busy || !apiKey.trim()}
+                  onClick={() =>
+                    void run(async () => {
+                      await store.setApiKey(providerId, apiKey.trim());
+                      setApiKey('');
+                    }, 'Key saved to this device only.')
+                  }
+                >
+                  Save
+                </button>
+              </div>
+              <span className="hint">
+                Keys live in this device's storage and are excluded from exports unless you opt in. They are sent
+                only to the provider you selected.
+              </span>
             </div>
-            <span className="hint">
-              P1: keys live in this device's storage and are excluded from exports unless you opt in. They are sent
-              only to the provider you selected.
-            </span>
-          </div>
+          ) : (
+            <p className="small dim">
+              <strong>No API key required</strong> for this provider. {store.providers().find((p) => p.id === providerId)?.keylessNote}
+            </p>
+          )}
           <div className="row">
             <button
               className="btn"
@@ -213,7 +220,7 @@ export function Settings({ store }: { store: AppStore }) {
                 void store.testKey(providerId, apiKey.trim() || '').then(setKeyMsg);
               }}
             >
-              Test key
+              {requiresKey ? 'Test key' : 'Test connection'}
             </button>
             {keyMsg && <span className={keyMsg.ok ? 'badge ok' : 'badge warn'} role="status">{keyMsg.ok ? '✓ works' : `✗ ${keyMsg.message}`}</span>}
           </div>
@@ -221,13 +228,13 @@ export function Settings({ store }: { store: AppStore }) {
 
         {/* ------------------------------------------------- export / import */}
         <div className="card">
-          <h2>Export &amp; import (A4)</h2>
+          <h2>Export &amp; import</h2>
           <p className="small dim">
             {DISCLOSURE_DATA_LABEL}
           </p>
           <label className="checkline">
             <input type="checkbox" checked={includeKeys} onChange={(e) => setIncludeKeys(e.target.checked)} />
-            <span className="small">Include API keys in exports (off = safer, P2)</span>
+            <span className="small">Include API keys in exports (off = safer)</span>
           </label>
           <div className="row" style={{ gap: 10, marginTop: 8 }}>
             <button className="btn grow" disabled={busy} onClick={() => void doExport()}>
@@ -262,7 +269,7 @@ export function Settings({ store }: { store: AppStore }) {
 
         {/* ----------------------------------------------------------- reset */}
         <div className="card">
-          <h2>Reset (U1)</h2>
+          <h2>Reset</h2>
           {confirmReset === 'off' && (
             <button className="btn danger block" onClick={() => setConfirmReset('ask')}>
               Reset practice account…
@@ -316,7 +323,7 @@ export function Settings({ store }: { store: AppStore }) {
 
         {/* ------------------------------------------------- disclaimers/About */}
         <div className="card">
-          <h2>About &amp; disclaimers (D1–D5)</h2>
+          <h2>About &amp; disclaimers</h2>
           <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, margin: 0 }}>{DISCLAIMER_FULL}</pre>
           <p className="tiny dim" style={{ marginTop: 8 }}>{DISCLAIMER_SHORT}</p>
           <ul className="tiny dim" style={{ paddingLeft: 18 }}>
@@ -329,7 +336,7 @@ export function Settings({ store }: { store: AppStore }) {
         </div>
 
         <div className="card">
-          <h2>Diagnostics (V5)</h2>
+          <h2>Diagnostics</h2>
           <button className="btn block" onClick={() => setNotice(store.debugReconcile())}>
             Run consistency check
           </button>

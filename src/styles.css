@@ -347,10 +347,18 @@ details.gloss summary { cursor: pointer; font-weight: 650; min-height: 34px; dis
 details.gloss p { margin: 6px 0 0; color: var(--text-dim); font-size: 14px; }
 
 .tooltip-term {
+  border: none;
   border-bottom: 1px dashed var(--accent-2);
-  cursor: help;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
   color: var(--accent-2);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
 }
+.tooltip-term:hover, .tooltip-term:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
 
 .sr-only {
   position: absolute;

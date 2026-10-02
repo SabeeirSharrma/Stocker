@@ -85,14 +85,78 @@ export function SimulatedBadge() {
 
 /* ------------------------------------------------------------- glossary (T1) */
 
-/** Glossary term with an inline definition (T1). */
+/**
+ * Glossary sheet state. A tiny module-level store so any `<Term>` anywhere can
+ * open the shared explanation sheet without threading context through every
+ * screen (T1 + U4: tapping a term must open its definition on touch devices,
+ * where `title` tooltips never appear).
+ */
+type GlossaryListener = (id: string | null) => void;
+let glossaryOpenId: string | null = null;
+const glossaryListeners = new Set<GlossaryListener>();
+
+function emitGlossary(): void {
+  for (const l of glossaryListeners) l(glossaryOpenId);
+}
+
+/** Open the shared glossary sheet for a term id. */
+export function openGlossary(id: string): void {
+  glossaryOpenId = id;
+  emitGlossary();
+}
+
+function closeGlossary(): void {
+  glossaryOpenId = null;
+  emitGlossary();
+}
+
+/** Close the shared glossary sheet (also bound to backdrop click / Esc). */
+export { closeGlossary };
+
+function subscribeGlossary(l: GlossaryListener): () => void {
+  glossaryListeners.add(l);
+  return () => glossaryListeners.delete(l);
+}
+
+/** Glossary term; tapping it opens a short explanation (T1). */
 export function Term({ id, children }: { id: string; children?: ReactNode }) {
   const g = glossaryById(id);
   if (!g) return <>{children ?? id}</>;
   return (
-    <abbr className="tooltip-term" title={`${g.short}. ${g.body}`}>
+    <button type="button" className="tooltip-term" onClick={() => openGlossary(id)} aria-haspopup="dialog">
       {children ?? g.term}
-    </abbr>
+    </button>
+  );
+}
+
+/** Shared bottom sheet that shows the currently opened glossary term. */
+export function GlossarySheet() {
+  const [openId, setOpenId] = useState<string | null>(glossaryOpenId);
+  useEffect(() => subscribeGlossary(setOpenId), []);
+  useEffect(() => {
+    if (openId == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeGlossary();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openId]);
+
+  const g = openId ? glossaryById(openId) : null;
+  if (!g) return null;
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label={g.term} onClick={closeGlossary}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="row between">
+          <h2>{g.term}</h2>
+          <button className="btn ghost" style={{ minHeight: 36 }} onClick={closeGlossary} aria-label="Close definition">
+            ✕
+          </button>
+        </div>
+        <p className="small"><strong>{g.short}</strong></p>
+        <p className="small dim" style={{ margin: 0 }}>{g.body}</p>
+      </div>
+    </div>
   );
 }
 
@@ -164,7 +228,7 @@ export function LineChart({
   const padB = 18;
 
   if (series.length < 2) {
-    return <div className="empty small">Not enough history yet — values appear as sessions pass (R1).</div>;
+    return <div className="empty small">Not enough history yet — values appear as sessions pass.</div>;
   }
 
   const all = [...series, ...(benchmark ?? [])].map((p) => p.y);

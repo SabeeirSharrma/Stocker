@@ -99,7 +99,7 @@ describe('export / import (A4, P2)', () => {
     const badMoney = JSON.parse(buildExport(makeState(), {}, false));
     badMoney.app.fills = [{ id: 'f', orderId: 'o', side: 'buy', qty: 1, nativePriceMinor: 1.5, baseGrossMinor: 1, feesMinor: 0, baseDebitedMinor: 1, baseCreditedMinor: 0, taxWithheldMinor: 0, fxRate: 1, timestampUtc: 'now' }];
     const r2 = parseExport(JSON.stringify(badMoney));
-    expect(r2).toMatchObject({ ok: false, error: expect.stringContaining('W4') });
+    expect(r2).toMatchObject({ ok: false, error: expect.stringContaining('fill.nativePriceMinor must be an integer') });
   });
 
   it('rejects unknown future order statuses', () => {

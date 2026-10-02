@@ -170,7 +170,7 @@ export function TradeTicket({
             </div>
 
             <div className="field">
-              <label htmlFor="tqty">Quantity (whole shares — I5)</label>
+              <label htmlFor="tqty">Quantity (whole shares)</label>
               <input id="tqty" inputMode="numeric" value={qtyText} onChange={(e) => setQtyText(e.target.value)} placeholder="1" />
               {side === 'buy' && est && (
                 <span className="hint">Max affordable ≈ {maxAffordableText(est, store)} shares at this price.</span>
@@ -257,7 +257,7 @@ export function TradeTicket({
                     </span>
                   </div>
 
-                  <h2 style={{ margin: '12px 0 6px' }}>Itemised costs (RM2 — estimates)</h2>
+                  <h2 style={{ margin: '12px 0 6px' }}>Itemised costs (estimates)</h2>
                   {est.feeLines.length === 0 ? (
                     <div className="kv"><span className="k">Fees &amp; taxes</span><span className="v">none for this market/side</span></div>
                   ) : (
@@ -272,7 +272,7 @@ export function TradeTicket({
                   )}
                   {est.taxMinor > 0 && (
                     <div className="kv">
-                      <span className="k">Estimated tax withheld (RM8)</span>
+                      <span className="k">Estimated tax withheld</span>
                       <span className="v">
                         <Money minor={est.taxMinor} currency={base} />
                       </span>
@@ -286,7 +286,7 @@ export function TradeTicket({
                   </div>
 
                   <h2 style={{ margin: '12px 0 6px' }}>
-                    <Term id="spread">Spread</Term> &amp; <Term id="slippage">slippage</Term> (RM3)
+                    <Term id="spread">Spread</Term> &amp; <Term id="slippage">slippage</Term>
                   </h2>
                   <div className="kv">
                     <span className="k">Modelled impact</span>
@@ -296,7 +296,7 @@ export function TradeTicket({
                   </div>
                   <div className="tiny dim">{est.slippageExplanation}</div>
 
-                  <h2 style={{ margin: '12px 0 6px' }}>After the trade (RM9)</h2>
+                  <h2 style={{ margin: '12px 0 6px' }}>After the trade</h2>
                   <div className="kv">
                     <span className="k">Position size</span>
                     <span className="v">
@@ -337,7 +337,7 @@ export function TradeTicket({
                   )}
                   {ctx && !ctx.marketOpen && type === 'market' && !est.queued && (
                     <div className="notice warn" role="status">
-                      The market is closed — this order will queue for the next session (M3/R2).
+                      The market is closed — this order will queue for the next session.
                     </div>
                   )}
 
@@ -403,7 +403,7 @@ function TradeResult({
         {result.status === 'queued' && (
           <div className="small dim">
             You'll find it under Orders. It fills automatically when its condition is met, or expires at the session
-            close if it's a day order (RM4).
+            close if it's a day order.
           </div>
         )}
       </div>
@@ -455,7 +455,7 @@ function TradeResult({
           )}
           {!result.fill.realism && (
             <div className="tiny" style={{ marginTop: 6 }}>
-              <span className="badge warn">idealized fill</span> — no fees, spread or slippage were applied (RM1).
+              <span className="badge warn">idealized fill</span> — no fees, spread or slippage were applied.
             </div>
           )}
         </div>
@@ -463,7 +463,7 @@ function TradeResult({
 
       {result.feedback.length > 0 && (
         <div className="card">
-          <h2>What just happened (T3)</h2>
+          <h2>What just happened</h2>
           {result.feedback.map((f) => (
             <div key={f.id} className="challenge">
               <div className="title">{f.title}</div>

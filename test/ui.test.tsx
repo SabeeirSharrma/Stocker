@@ -8,7 +8,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { createElement } from 'react';
 import { App } from '../src/App';
-import { Onboarding } from '../src/ui/onboarding';
+import { Onboarding, CURRENCIES_OPTS, defaultBalance, balancePresets, presetLabel } from '../src/ui/onboarding';
 import { Portfolio } from '../src/ui/portfolio';
 import { Search } from '../src/ui/search';
 import { InstrumentDetail } from '../src/ui/instrument';
@@ -17,11 +17,13 @@ import { Orders } from '../src/ui/orders';
 import { Performance } from '../src/ui/performance';
 import { Learn } from '../src/ui/learn';
 import { Settings } from '../src/ui/settings';
+import { GlossarySheet, openGlossary, closeGlossary } from '../src/ui/common';
 import { createAppStore, type AppStore } from '../src/state/store';
+import { estimateOrder } from '../src/engine/engine';
 import type { QuoteOut } from '../src/data/marketdata';
 import type { QuoteData } from '../src/engine/engine';
 import { closeDatabase } from '../src/storage/idb';
-import { AAPL, MSFT, makeState, quote } from './helpers';
+import { AAPL, MSFT, draft, ctx, makeState, quote } from './helpers';
 
 afterEach(async () => {
   await closeDatabase();
@@ -129,12 +131,13 @@ describe('screens render without crashing', () => {
     expect(html).toMatch(/Fills \(/);
   });
 
-  it('performance shows the equity curve and the V5 identity', () => {
+  it('performance shows the equity curve and the consistency check', () => {
     const store = withQuotes(readyStore());
     const html = renderToString(createElement(Performance, { store }));
     expect(html).toMatch(/Equity curve/);
     expect(html).toMatch(/P&amp;L breakdown/);
-    expect(html).toMatch(/Consistency check \(V5\)/);
+    expect(html).toMatch(/Consistency check/);
+    expect(html).not.toMatch(/\(V5\)/); // spec IDs must not leak into the UI
     expect(html).toMatch(/reconciled/);
   });
 
@@ -170,5 +173,141 @@ describe('screens render without crashing', () => {
     ]) {
       expect(() => renderToString(el)).not.toThrow();
     }
+  });
+});
+
+describe('no spec IDs leak into user-facing strings', () => {
+  const specId = /\((W\d|RM\d+|TST\d+|[TDUAIPRVXMCFSE]\d+|M\d+|R\d+|V\d+|X\d+|I\d+|P\d+|A\d+|U\d+|D\d+|F\d+)([–/,]\d*\w*)*\)/;
+
+  it('every screen renders without a requirement number in the text', () => {
+    const store = withQuotes(readyStore());
+    const screens = [
+      createElement(App, { store }),
+      createElement(Onboarding, { store }),
+      createElement(Portfolio, { store, onOpenInstrument: () => {}, onOpenOrders: () => {}, onSearch: () => {} }),
+      createElement(Search, { store, onOpen: () => {} }),
+      createElement(InstrumentDetail, { store, instrument: AAPL, onBack: () => {}, onTrade: () => {} }),
+      createElement(TradeTicket, { store, instrument: AAPL, initialSide: 'buy', onClose: () => {} }),
+      createElement(Orders, { store }),
+      createElement(Performance, { store }),
+      createElement(Learn, { store }),
+      createElement(Settings, { store }),
+    ];
+    for (const el of screens) {
+      const html = renderToString(el);
+      const hit = html.match(specId);
+      expect(hit, `spec ID ${hit?.[0]} leaked into ${el.type.name}`).toBeNull();
+    }
+  });
+});
+
+describe('onboarding: currency labels and balance presets', () => {
+  it('uses short currency labels that fit a phone select', () => {
+    const labels = CURRENCIES_OPTS.map((c) => c.label);
+    // the INR label was truncated to "lakh groupin…" — keep it short
+    expect(labels).toContain('INR – Indian Rupee (₹)');
+    expect(labels.some((l) => l.includes('lakh grouping'))).toBe(false);
+    expect(labels.some((l) => l.includes('no decimals'))).toBe(false);
+    for (const l of labels) expect(l.length).toBeLessThanOrEqual(30); // the old INR label was 36 → truncated
+    expect(labels).toContain('USD – US Dollar ($)');
+    expect(labels).toContain('JPY – Japanese Yen (¥)');
+    // every currency offered in settings is selectable here
+    for (const code of ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'HKD', 'CAD', 'AUD']) {
+      expect(labels.some((l) => l.startsWith(`${code} –`))).toBe(true);
+    }
+  });
+
+  it('offers quick-pick starting-balance presets with the field still editable', () => {
+    // presets are currency-aware, in major units
+    expect(balancePresets('USD')).toEqual([10_000, 50_000, 100_000]);
+    expect(balancePresets('INR')).toEqual([100_000, 500_000, 1_000_000]);
+    expect(presetLabel('INR', 100_000)).toBe('₹1 lakh');
+    expect(presetLabel('INR', 500_000)).toBe('₹5 lakh');
+    expect(presetLabel('INR', 1_000_000)).toBe('₹10 lakh');
+    expect(presetLabel('USD', 10_000)).toMatch(/\$10,000/);
+    // INR gets a realistic ₹1-lakh default instead of ₹10,000
+    expect(defaultBalance('INR')).toBe('100000');
+    expect(defaultBalance('USD')).toBe('10000');
+    expect(defaultBalance('JPY')).toBe('500000');
+  });
+
+  it('onboarding renders and the balance field stays free text', () => {
+    const store = createAppStore().store;
+    const html = renderToString(createElement(Onboarding, { store }));
+    expect(html).toMatch(/Welcome to Stocker/);
+    expect(html).toMatch(/I understand this is an educational simulation/);
+    // presets are wired as buttons on step 1 — assert the markup contract here
+    expect(presetLabel('INR', 1_000_000)).toBe('₹10 lakh');
+    expect(balancePresets('INR')).toContain(1_000_000);
+  });
+});
+
+describe('glossary terms open an explanation on tap (T1)', () => {
+  it('terms are buttons, and the shared sheet renders the definition', () => {
+    const store = withQuotes(readyStore());
+    const html = renderToString(createElement(TradeTicket, { store, instrument: AAPL, initialSide: 'buy', onClose: () => {} }));
+    const buttons = html.match(/<button[^>]*class="tooltip-term"[^>]*>/g) ?? [];
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(html).not.toMatch(/<abbr/); // title tooltips never show on touch
+
+    openGlossary('spread'); // module-level store → sheet subscribes
+    const sheet = renderToString(createElement(GlossarySheet));
+    expect(sheet).toMatch(/role="dialog"/);
+    expect(sheet).toMatch(/Spread/);
+    expect(sheet).toMatch(/aria-modal="true"/);
+  });
+
+  it('renders nothing when no term is open', () => {
+    closeGlossary();
+    expect(renderToString(createElement(GlossarySheet))).toBe('');
+  });
+});
+
+describe('Realism Mode off labels everything idealized (RM1)', () => {
+  it('unchecking realism in settings flips estimates to idealized', async () => {
+    const { store } = createAppStore();
+    store.state = makeState({ realism: true });
+    store.status = { ...store.status, ready: true };
+
+    // realism ON → costs applied, marked realistic
+    const on = estimateOrder(store.state, draft({ instrument: AAPL }), ctx());
+    expect(on.realism).toBe(true);
+    expect(on.feeLines.length).toBeGreaterThan(0);
+
+    await store.updateSettings({ realismMode: false });
+    expect(store.account()?.settings.realismMode).toBe(false);
+
+    // realism OFF → idealized: no fees, flagged, and explained
+    const off = estimateOrder(store.state, draft({ instrument: AAPL }), ctx());
+    expect(off.realism).toBe(false);
+    expect(off.feeLines).toHaveLength(0);
+    expect(off.totalBaseMinor).toBe(off.grossBaseMinor);
+    expect(off.slippageExplanation).toMatch(/idealized/i);
+  });
+
+  it('the portfolio labels fills idealized when realism is off', () => {
+    const store = withQuotes(readyStore(makeState({ realism: false })));
+    const html = renderToString(
+      createElement(Portfolio, { store, onOpenInstrument: () => {}, onOpenOrders: () => {}, onSearch: () => {} }),
+    );
+    expect(html).toMatch(/Realism Mode is off/);
+    expect(html).toMatch(/fills are .*idealized/);
+    expect(html).toMatch(/no fees, spread or slippage/);
+    expect(html).toMatch(/Settings/);
+  });
+
+  it('the notice disappears once realism is back on', async () => {
+    const store = withQuotes(readyStore(makeState({ realism: false })));
+    await store.updateSettings({ realismMode: true });
+    const html = renderToString(
+      createElement(Portfolio, { store, onOpenInstrument: () => {}, onOpenOrders: () => {}, onSearch: () => {} }),
+    );
+    expect(html).not.toMatch(/Realism Mode is off/);
+  });
+
+  it('settings explains that off means idealized fills', () => {
+    const store = readyStore(makeState({ realism: false }));
+    const html = renderToString(createElement(Settings, { store }));
+    expect(html).toMatch(/Off = idealized fills/);
   });
 });

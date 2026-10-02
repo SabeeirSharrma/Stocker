@@ -41,7 +41,7 @@ export function Learn({ store }: { store: AppStore }) {
         {section === 'challenges' && (
           <div className="card">
             <div className="row between">
-              <h2 style={{ margin: 0 }}>Practice challenges (T2)</h2>
+              <h2 style={{ margin: 0 }}>Practice challenges</h2>
               <span className="badge">
                 {doneCount}/{CHALLENGES.length}
               </span>
@@ -70,7 +70,7 @@ export function Learn({ store }: { store: AppStore }) {
 
         {section === 'glossary' && (
           <div className="card">
-            <h2>Glossary (T1)</h2>
+            <h2>Glossary</h2>
             <div className="field">
               <label htmlFor="gq">Filter terms</label>
               <input id="gq" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="spread, settlement…" />
@@ -96,7 +96,7 @@ export function Learn({ store }: { store: AppStore }) {
         {section === 'ready' && (
           <>
             <div className="card">
-              <h2>Known limits of this simulator (RM12)</h2>
+              <h2>Known limits of this simulator</h2>
               <div className="stack-sm">
                 {KNOWN_LIMITS.map((l) => (
                   <div key={l.title}>

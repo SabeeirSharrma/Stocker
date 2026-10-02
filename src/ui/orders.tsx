@@ -51,7 +51,7 @@ export function Orders({ store, onOpenOrdersNotice }: { store: AppStore; onOpenO
             {open.length === 0 ? (
               <div className="empty small">
                 Nothing pending. Orders appear here while they are queued for the next session, waiting for a price
-                trigger, or waiting for data (R4).
+                trigger, or waiting for data.
               </div>
             ) : (
               <div className="list">
@@ -79,7 +79,7 @@ export function Orders({ store, onOpenOrdersNotice }: { store: AppStore; onOpenO
                       style={{ minHeight: 40 }}
                       onClick={() => {
                         store.cancelOrder(o.id);
-                        onOpenOrdersNotice?.('Order cancelled (U1).');
+                        onOpenOrdersNotice?.('Order cancelled.');
                       }}
                       aria-label={`Cancel order for ${o.instrument.symbol}`}
                     >
@@ -183,7 +183,7 @@ export function Orders({ store, onOpenOrdersNotice }: { store: AppStore; onOpenO
               <h2>Cash events</h2>
               {events.length === 0 ? (
                 <div className="empty small">
-                  No dividends or other cash events yet. They are credited when the provider reports them (RM7) —
+                  No dividends or other cash events yet. They are credited when the provider reports them —
                   otherwise the position is flagged instead of guessed.
                 </div>
               ) : (

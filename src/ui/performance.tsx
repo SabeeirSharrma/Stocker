@@ -99,7 +99,7 @@ export function Performance({ store }: { store: AppStore }) {
           </div>
           <div className="tiny dim" style={{ marginTop: 6 }}>
             {benchStatus === 'loading' && 'Loading benchmark…'}
-            {benchStatus === 'none' && `Benchmark (${benchKey.symbol}) data unavailable — showing your portfolio only. Nothing is guessed (R4).`}
+            {benchStatus === 'none' && `Benchmark (${benchKey.symbol}) data unavailable — showing your portfolio only. Nothing is guessed.`}
             {benchStatus === 'ok' &&
               'Both curves start at the same value so you compare growth, not size. Cached daily closes — not a live feed.'}
           </div>
@@ -140,7 +140,7 @@ export function Performance({ store }: { store: AppStore }) {
             <span className="v value"><Money minor={v.totalValueMinor} currency={base} /></span>
           </div>
           <p className="tiny dim" style={{ marginBottom: 0 }}>
-            Tax figures are estimates from the configured model — the app is not a tax authority (D5, RM8).
+            Tax figures are estimates from the configured model — the app is not a tax authority.
           </p>
         </div>
 
@@ -188,18 +188,18 @@ export function Performance({ store }: { store: AppStore }) {
           {v.rows.some((r) => r.flags.length > 0) && (
             <div className="tiny dim" style={{ marginTop: 8 }}>
               ⚠ Flags present: {v.rows.flatMap((r) => r.flags).filter((f, i, a) => a.indexOf(f) === i).join(', ')} —
-              returns may exclude unverified dividends/splits (X3/RM7).
+              returns may exclude unverified dividends/splits.
             </div>
           )}
           {v.missingPrices.length > 0 && (
             <div className="notice warn small" style={{ marginTop: 8 }}>
-              Missing prices: {v.missingPrices.join(', ')} — valued at 0, never fabricated (X4).
+              Missing prices: {v.missingPrices.join(', ')} — valued at 0, never fabricated.
             </div>
           )}
         </div>
 
         <div className="card">
-          <h2>Consistency check (V5)</h2>
+          <h2>Consistency check</h2>
           {rec ? (
             <>
               <div className="kv">

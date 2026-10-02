@@ -72,7 +72,7 @@ export function validateState(app: unknown): Check {
   for (const p of app.positions as unknown[]) {
     if (!isObj(p)) return 'position must be an object';
     if (!isObj(p.instrument) || !isStr((p.instrument as Record<string, unknown>).symbol) || !isStr((p.instrument as Record<string, unknown>).exchange)) {
-      return 'position.instrument must have symbol+exchange (I1)';
+      return 'position.instrument must have symbol+exchange';
     }
     if (!isInt(p.qty) || (p.qty as number) < 0) return 'position.qty must be a non-negative integer';
     if (!isInt(p.costBaseMinor)) return 'position.costBaseMinor must be an integer';
@@ -88,10 +88,10 @@ export function validateState(app: unknown): Check {
     if (f.side !== 'buy' && f.side !== 'sell') return 'fill.side must be buy|sell';
     if (!isInt(f.qty) || (f.qty as number) <= 0) return 'fill.qty must be a positive integer';
     for (const field of ['nativePriceMinor', 'baseGrossMinor', 'feesMinor', 'baseDebitedMinor', 'baseCreditedMinor', 'taxWithheldMinor']) {
-      if (!isInt(f[field])) return `fill.${field} must be an integer (W4)`;
+      if (!isInt(f[field])) return `fill.${field} must be an integer`;
     }
     if (!isNum(f.fxRate)) return 'fill.fxRate must be a number';
-    if (!isStr(f.timestampUtc)) return 'fill.timestampUtc must be a string (X5)';
+    if (!isStr(f.timestampUtc)) return 'fill.timestampUtc must be a string';
     fillOrderIds.add(f.orderId as string);
   }
 

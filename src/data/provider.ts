@@ -6,7 +6,7 @@
 
 import type { AssetType, DividendRecord, Instrument, SplitRecord } from '../engine/types';
 
-export type ProviderId = 'twelvedata' | 'finnhub';
+export type ProviderId = 'twelvedata' | 'finnhub' | 'yfinance';
 
 export interface CoverageDescriptor {
   /** exchanges this adapter can return *and* we know about */
@@ -20,8 +20,8 @@ export interface CoverageDescriptor {
   forex: boolean;
   /** free tiers are usually delayed (P6) */
   delayed: boolean;
-  /** P8 [VERIFY]: direct browser calls */
-  cors: 'supported' | 'unverified';
+  /** P8 [VERIFY]: direct browser calls; 'blocked' = native-only (CORS) */
+  cors: 'supported' | 'unverified' | 'blocked';
   notes: string;
 }
 
@@ -109,11 +109,11 @@ export function describeProviderError(e: unknown): { title: string; guidance: st
       case 'rate_limit':
         return { title: 'Rate limit reached', guidance: `Your provider's free tier limits request frequency. The app queued the request — try again in a moment. ${e.hint}` };
       case 'cors':
-        return { title: 'Blocked by the browser', guidance: 'This provider rejected a browser request (CORS). Use a different provider in Settings (P8).' };
+        return { title: 'Blocked by the browser', guidance: 'This provider rejected a browser request (CORS). Use a different provider in Settings.' };
       case 'network':
         return { title: 'Network unavailable', guidance: 'You are offline or the provider is down. The app keeps working with cached data, marked stale.' };
       case 'not_found':
-        return { title: 'Symbol not found', guidance: 'The symbol may be delisted or renamed (X2). Try searching again.' };
+        return { title: 'Symbol not found', guidance: 'The symbol may be delisted or renamed. Try searching again.' };
       case 'unsupported':
         return { title: 'Not supported by this provider', guidance: 'The data you asked for is not exposed by this provider. The app flags affected data instead of guessing.' };
     }

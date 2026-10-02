@@ -358,7 +358,7 @@ function reconstructOrders(state: AppState, data: ReconstructionData, nowUtc: Da
     if (data.missing[id] || candles.length === 0) {
       next = markOrder(next, order.id, {
         status: 'waiting_data',
-        waitingReason: 'Waiting for candle data (R4) — the order will fill once market data is available. Never guessed.',
+        waitingReason: 'Waiting for candle data — the order will fill once market data is available. Never guessed.',
       });
       waiting.push(order.id);
       continue;
@@ -386,14 +386,14 @@ function reconstructOrders(state: AppState, data: ReconstructionData, nowUtc: Da
       if (expired) {
         next = markOrder(next, order.id, {
           status: 'expired',
-          reason: 'Day order expired before its price condition triggered (RM4).',
+          reason: 'Day order expired before its price condition triggered.',
           waitingReason: undefined,
         });
         notes.push(`Order ${order.id} expired at session close without triggering (RM4).`);
       } else {
         next = markOrder(next, order.id, {
           status: 'queued',
-          waitingReason: order.type === 'market' ? 'Waiting for the next session open (R2).' : 'Waiting for the price condition to trigger (R3).',
+          waitingReason: order.type === 'market' ? 'Waiting for the next session open.' : 'Waiting for the price condition to trigger.',
         });
       }
       continue;
@@ -407,7 +407,7 @@ function reconstructOrders(state: AppState, data: ReconstructionData, nowUtc: Da
     if (rate == null && order.instrument.currency !== base) {
       next = markOrder(next, order.id, {
         status: 'waiting_data',
-        waitingReason: `Waiting for historical FX ${order.instrument.currency}->${base} for ${decision.sessionDate} (R4).`,
+        waitingReason: `Waiting for historical FX ${order.instrument.currency}->${base} for ${decision.sessionDate}.`,
       });
       waiting.push(order.id);
       continue;

@@ -49,7 +49,7 @@ export function postTradeFeedback(fill: Fill, valuation: Valuation, position: Po
     out.push({
       id: 'idealized',
       title: 'Idealized mode',
-      body: 'Realism Mode is off, so no costs or spreads were applied. Real trading always has costs — switch Realism Mode on in Settings for honest numbers (RM1).',
+      body: 'Realism Mode is off, so no costs or spreads were applied. Real trading always has costs — switch Realism Mode on in Settings for honest numbers.',
     });
   }
 
@@ -70,7 +70,7 @@ export function postTradeFeedback(fill: Fill, valuation: Valuation, position: Po
     out.push({
       id: 'settlement',
       title: 'Settlement',
-      body: `Sale proceeds of ${formatMinor(fill.baseCreditedMinor, baseCurrency)} become spendable after settlement (RM5) — shown separately as pending until then.`,
+      body: `Sale proceeds of ${formatMinor(fill.baseCreditedMinor, baseCurrency)} become spendable after settlement — shown separately as pending until then.`,
     });
   }
 
@@ -79,7 +79,7 @@ export function postTradeFeedback(fill: Fill, valuation: Valuation, position: Po
     out.push({
       id: 'spread',
       title: 'Spread & slippage applied',
-      body: `Execution price adjusted by ${fill.spreadBpsApplied + fill.slippageBpsApplied} bps (spread ${fill.spreadBpsApplied} bps + slippage ${fill.slippageBpsApplied} bps) — buys pay more, sells receive less, as in real markets (RM3).`,
+      body: `Execution price adjusted by ${fill.spreadBpsApplied + fill.slippageBpsApplied} bps (spread ${fill.spreadBpsApplied} bps + slippage ${fill.slippageBpsApplied} bps) — buys pay more, sells receive less, as in real markets.`,
     });
   }
 
@@ -96,7 +96,7 @@ export function concentrationWarnings(valuation: Valuation, threshold = 0.25): s
     if (r.qty <= 0) continue;
     const pct = r.valueBaseMinor / total;
     if (pct > threshold) {
-      out.push(`${r.instrument.symbol} is ${formatPercent(pct)} of your portfolio — above the ${formatPercent(threshold)} observation threshold. Diversification spreads risk (T1).`);
+      out.push(`${r.instrument.symbol} is ${formatPercent(pct)} of your portfolio — above the ${formatPercent(threshold)} observation threshold. Diversification spreads risk.`);
     }
   }
   return out;

@@ -13,9 +13,11 @@ the costs, delays and rules you'd meet at a real broker.
 
 - **Virtual wallet** — pick a base currency and starting balance; everything is
   stored on-device (IndexedDB). No backend, no accounts, no telemetry.
-- **Real market data** — bring your own free-tier API key for **Twelve Data**
-  (default), **Finnhub** or **MarketData**. Keys live only on your device and are
-  excluded from exports unless you opt in.
+- **Real market data** — three providers: **Twelve Data** (default, bring your
+  own free-tier key: Basic plan = 8 credits/min · 800/day, real-time US, forex and
+  crypto), **Finnhub** (US-focused, own key), and **Yahoo Finance** (no API key
+  or sign-up at all). Keys live only on your device and are excluded from exports
+  unless you opt in.
 - **Full order types** — market, limit, stop, stop-limit; day / GTC; queued orders
   fill at the next session's open, never retroactively against the same day's candle.
 - **Realism Mode (on by default)** — itemised fees per market (US SEC/FINRA, IN
@@ -26,9 +28,9 @@ the costs, delays and rules you'd meet at a real broker.
   reloads and offline periods.
 - **Reconciliation you can check** — `starting + realized + unrealized − fees +
   dividends − tax = total value` is displayed on the Performance screen (V5).
-- **Teaching layer** — glossary, glossary tooltips, automatic challenges,
-  post-trade explanations, trade journal, known-limits statement and a "what real
-  trading adds" readiness checklist.
+- **Teaching layer** — glossary with tap-to-open definitions, automatic
+  challenges, post-trade explanations, trade journal, known-limits statement and
+  a "what real trading adds" readiness checklist.
 - **Works offline** — app shell cached by a service worker; stale data is always
   labelled with its timestamp, never silently shown as fresh.
 
@@ -37,8 +39,9 @@ the costs, delays and rules you'd meet at a real broker.
 ```bash
 npm install
 npm run dev        # dev server
-npm test           # 166 deterministic tests (no network): engine, money,
-                   # calendar, reconstruction, storage, queue/cache, teaching, UI
+npm test           # 198 deterministic tests (no network): engine, money,
+                   # calendar, reconstruction, storage, queue/cache, providers,
+                   # teaching, UI
 npm run typecheck  # tsc -b
 npm run build      # production bundle → dist/
 ```
@@ -56,6 +59,10 @@ JAVA_HOME=<jdk 21> ANDROID_HOME=<android-sdk> ./gradlew assembleRelease
 
 Without signing secrets the release build falls back to the local debug key so
 the APK is always installable during development.
+
+`capacitor.config.ts` enables `CapacitorHttp`, so all provider calls — including
+the keyless Yahoo Finance adapter, which sends no CORS headers and is therefore
+blocked in plain browser tabs — run through the native HTTP stack in the APK.
 
 ## Releasing (GitHub Actions)
 

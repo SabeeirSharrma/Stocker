@@ -2,7 +2,10 @@
  * Twelve Data adapter (spec P4 — default provider: one key covers stocks,
  * ETFs and forex across many exchanges).
  *
- * Free tier: 8 requests/min, 800/day, usually delayed data (P6).
+ * Basic plan (free): 8 API credits/min, 800/day; real-time US markets, forex
+ * and crypto. Non-US exchanges may still be delayed on this tier (P6).
+ * The plan also includes 8 trial WebSocket credits; this adapter polls REST
+ * only (cache TTLs keep us inside the 8 credits/min), so they go unused.
  * [VERIFY] free-tier coverage of NSE/BSE and other non-US exchanges (P7).
  * [VERIFY] direct browser (CORS) access (P8). Display-only usage (P9).
  */
@@ -10,6 +13,7 @@
 import type {
   DividendRecord, Instrument, SplitRecord,
 } from '../engine/types';
+import { marketGroupForExchange } from '../calendar/calendar';
 import { ProviderError, type KeyTestResult, type ProviderAdapter, type ProviderCandle, type ProviderFxPoint, type ProviderQuote } from './provider';
 
 export const TWELVEDATA_BASE = 'https://api.twelvedata.com';
@@ -44,11 +48,11 @@ export function createTwelveData(deps: TwelvedataDeps): ProviderAdapter {
       res = await fetchFn(url, { headers: { Accept: 'application/json' } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      throw new ProviderError('cors', `Browser request to Twelve Data failed: ${msg}`, 'Twelve Data normally allows browser calls; check your connection or try the other provider (P8).');
+      throw new ProviderError('cors', `Browser request to Twelve Data failed: ${msg}`, 'Twelve Data normally allows browser calls; check your connection or try the other provider.');
     }
     if (res.status === 429) {
       const retry = Number(res.headers.get('retry-after') ?? '60') * 1000;
-      throw new ProviderError('rate_limit', 'Twelve Data rate limit hit', 'Free tier allows 8 requests/minute.', retry || 60_000);
+      throw new ProviderError('rate_limit', 'Twelve Data rate limit hit', 'Basic plan (free): 8 credits/minute, 800/day. The app waits and retries.', retry || 60_000);
     }
     if (res.status === 401 || res.status === 403) {
       throw new ProviderError('auth', 'Twelve Data rejected the API key', 'Check the key or create a new one at twelvedata.com.');
@@ -66,10 +70,10 @@ export function createTwelveData(deps: TwelvedataDeps): ProviderAdapter {
         throw new ProviderError('auth', message, 'Check the key in Settings → Provider.');
       }
       if (code === '429' || /rate limit|too many/i.test(message)) {
-        throw new ProviderError('rate_limit', message, 'Free tier allows 8 requests/minute.', 60_000);
+        throw new ProviderError('rate_limit', message, 'Basic plan (free): 8 credits/minute, 800/day. The app waits and retries.', 60_000);
       }
       if (code === '404' || /not found|invalid symbol/i.test(message)) {
-        throw new ProviderError('not_found', message, 'The symbol may be delisted or misspelled (X2).');
+        throw new ProviderError('not_found', message, 'The symbol may be delisted or misspelled.');
       }
       throw new ProviderError('bad_response', message, '');
     }
@@ -83,10 +87,10 @@ export function createTwelveData(deps: TwelvedataDeps): ProviderAdapter {
     assetTypes: ['stock', 'etf', 'index'] as const,
     indexQuotes: true,
     forex: true,
-    delayed: true,
+    delayed: false, // real-time for US, forex and crypto on the Basic (free) plan; per-instrument flags below
     cors: 'supported' as const,
     notes:
-      'One key covers stocks, ETFs and forex across many exchanges. Free tier is delayed (P6). Exchange coverage per tier must be verified with a real free key (P7).',
+      'One key covers stocks, ETFs and forex across many exchanges. Basic (free) plan: 8 credits/min, 800/day, real-time US markets, forex and crypto; non-US exchanges may be delayed. Exchange coverage per tier must be verified with a real free key.',
   };
 
   const adapter: ProviderAdapter = {
@@ -98,7 +102,7 @@ export function createTwelveData(deps: TwelvedataDeps): ProviderAdapter {
     async testKey(): Promise<KeyTestResult> {
       const r = await api<{ code?: number; message?: string; status?: string; meta?: unknown }>('quote', { symbol: 'AAPL', exchange: 'NASDAQ' });
       if (isErrorBody(r) && r.status === 'error') throw new ProviderError('bad_response', String(r.message ?? 'test failed'), '');
-      return { ok: true, message: 'Key works — received a live quote for AAPL.', plan: 'Free tier (delayed data, 8 req/min)' };
+      return { ok: true, message: 'Key works — received a live quote for AAPL.', plan: 'Basic plan (free): 8 credits/min · 800/day · real-time US/forex/crypto' };
     },
 
     async search(query: string, limit = 25): Promise<Instrument[]> {
@@ -140,7 +144,9 @@ export function createTwelveData(deps: TwelvedataDeps): ProviderAdapter {
         low: num(r.low),
         volume: num(r.volume),
         timestampUtc: iso,
-        delayed: true,
+        // Basic (free) plan: real-time for US markets (and forex/crypto, which
+        // have no exchange group here); other exchanges may be delayed (P6).
+        delayed: marketGroupForExchange(instrument.exchange) !== 'US',
       };
     },
 

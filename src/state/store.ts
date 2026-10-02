@@ -335,7 +335,7 @@ export class AppStore {
         const ctx = await this.buildContext(order.instrument);
         const result = evaluateLiveOrder(next, order, ctx);
         if (result.type === 'expired') {
-          next = { ...next, orders: next.orders.map((o) => (o.id === order.id ? { ...o, status: 'expired', reason: 'Day order expired before its condition triggered (RM4).' } : o)) };
+          next = { ...next, orders: next.orders.map((o) => (o.id === order.id ? { ...o, status: 'expired', reason: 'Day order expired before its condition triggered.' } : o)) };
         } else if (result.type === 'filled') {
           next = result.state;
         }
@@ -438,7 +438,8 @@ export class AppStore {
       nowUtc: now,
       settings: { realismMode: input.realismMode, providerId: input.providerId },
     });
-    await this.keys.set(input.providerId, input.apiKey);
+    if (input.apiKey) await this.keys.set(input.providerId, input.apiKey);
+    else await this.keys.remove(input.providerId); // keyless providers store nothing
     this.svc.setProvider(input.providerId);
     this.setState({
       ...emptyState(),

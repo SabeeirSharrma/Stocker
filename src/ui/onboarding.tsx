@@ -5,24 +5,48 @@ import type { AppStore } from '../state/store';
 import type { ProviderId } from '../data/provider';
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT, KNOWN_LIMITS } from '../teaching/content';
 import { Money, parseMajorToMinor, SimulatedBadge, Term } from './common';
+import { formatMinor } from '../engine/money';
 
-const CURRENCIES_OPTS = [
-  { code: 'USD', label: 'USD — US Dollar' },
-  { code: 'INR', label: 'INR — Indian Rupee (₹, lakh grouping)' },
-  { code: 'EUR', label: 'EUR — Euro' },
-  { code: 'GBP', label: 'GBP — British Pound' },
-  { code: 'JPY', label: 'JPY — Japanese Yen (no decimals)' },
-  { code: 'HKD', label: 'HKD — Hong Kong Dollar' },
-  { code: 'CAD', label: 'CAD — Canadian Dollar' },
-  { code: 'AUD', label: 'AUD — Australian Dollar' },
+export const CURRENCIES_OPTS = [
+  { code: 'USD', label: 'USD – US Dollar ($)' },
+  { code: 'INR', label: 'INR – Indian Rupee (₹)' },
+  { code: 'EUR', label: 'EUR – Euro (€)' },
+  { code: 'GBP', label: 'GBP – British Pound (£)' },
+  { code: 'JPY', label: 'JPY – Japanese Yen (¥)' },
+  { code: 'HKD', label: 'HKD – Hong Kong Dollar (HK$)' },
+  { code: 'CAD', label: 'CAD – Canadian Dollar (C$)' },
+  { code: 'AUD', label: 'AUD – Australian Dollar (A$)' },
 ];
+
+/** Sensible starting-balance defaults per currency (major units). */
+export function defaultBalance(currency: string): string {
+  if (currency === 'INR') return '100000'; // ₹1 lakh — enough to build a real portfolio
+  if (currency === 'JPY') return '500000';
+  return '10000';
+}
+
+/** Quick-pick presets in major units, per currency. */
+export function balancePresets(currency: string): number[] {
+  if (currency === 'INR') return [100_000, 500_000, 1_000_000]; // ₹1L / ₹5L / ₹10L
+  if (currency === 'JPY') return [500_000, 2_500_000, 5_000_000];
+  return [10_000, 50_000, 100_000];
+}
+
+/** Human label for a preset; Indian presets use lakh wording. */
+export function presetLabel(currency: string, major: number): string {
+  if (currency === 'INR') return `₹${major / 100_000} lakh`;
+  const exp = currency === 'JPY' ? 0 : 2;
+  return formatMinor(major * 10 ** exp, currency); // same locale rules as the rest of the app
+}
 
 export function Onboarding({ store }: { store: AppStore }) {
   const [step, setStep] = useState(0);
   const [ack, setAck] = useState(false);
 
   const [currency, setCurrency] = useState('USD');
-  const [balanceText, setBalanceText] = useState('10000');
+  const [balanceText, setBalanceText] = useState(defaultBalance('USD'));
+  // tracks the default we last auto-set, so a manual amount survives currency switches
+  const [balanceDefault, setBalanceDefault] = useState(defaultBalance('USD'));
   const [realism, setRealism] = useState(true); // RM1: on by default
 
   const [providerId, setProviderId] = useState<ProviderId>('twelvedata');
@@ -32,7 +56,16 @@ export function Onboarding({ store }: { store: AppStore }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const requiresKey = store.providers().find((p) => p.id === providerId)?.requiresKey ?? true;
   const balanceMinor = parseMajorToMinor(balanceText, currency);
+
+  function changeCurrency(next: string) {
+    const nextDefault = defaultBalance(next);
+    // untouched default follows the currency; a typed amount is kept as-is
+    if (balanceText === balanceDefault) setBalanceText(nextDefault);
+    setBalanceDefault(nextDefault);
+    setCurrency(next);
+  }
 
   async function testKey() {
     setTesting(true);
@@ -80,14 +113,14 @@ export function Onboarding({ store }: { store: AppStore }) {
             </p>
 
             <div className="card">
-              <h2>Read this first (D3)</h2>
+              <h2>Read this first</h2>
               <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 14, margin: 0, color: 'var(--text)' }}>
                 {DISCLAIMER_FULL}
               </pre>
             </div>
 
             <div className="card">
-              <h2>Known limits (RM12)</h2>
+              <h2>Known limits</h2>
               <div className="stack-sm">
                 {KNOWN_LIMITS.map((l) => (
                   <div key={l.title}>
@@ -117,8 +150,8 @@ export function Onboarding({ store }: { store: AppStore }) {
 
             <div className="card">
               <div className="field">
-                <label htmlFor="base-ccy">Base currency (W3)</label>
-                <select id="base-ccy" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                <label htmlFor="base-ccy">Base currency</label>
+                <select id="base-ccy" value={currency} onChange={(e) => changeCurrency(e.target.value)}>
                   {CURRENCIES_OPTS.map((c) => (
                     <option key={c.code} value={c.code}>{c.label}</option>
                   ))}
@@ -133,20 +166,34 @@ export function Onboarding({ store }: { store: AppStore }) {
                   inputMode="decimal"
                   value={balanceText}
                   onChange={(e) => setBalanceText(e.target.value)}
-                  placeholder="10000"
+                  placeholder={defaultBalance(currency)}
                 />
+                <div className="row" style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                  {balancePresets(currency).map((major) => (
+                    <button
+                      key={major}
+                      type="button"
+                      className="btn ghost"
+                      style={{ minHeight: 36, padding: '0 10px', fontSize: 13 }}
+                      onClick={() => setBalanceText(String(major))}
+                    >
+                      {presetLabel(currency, major)}
+                    </button>
+                  ))}
+                </div>
                 {balanceMinor != null && balanceMinor > 0 ? (
                   <span className="hint">You'll start with <Money minor={balanceMinor} currency={currency} /> of virtual cash.</span>
                 ) : (
-                  <span className="err">Enter a positive amount, e.g. 10000.</span>
+                  <span className="err">Enter a positive amount.</span>
                 )}
               </div>
 
               <label className="checkline">
                 <input type="checkbox" checked={realism} onChange={(e) => setRealism(e.target.checked)} />
                 <span>
-                  <strong>Realism Mode (RM1)</strong> — itemised <Term id="spread">costs</Term>, <Term id="slippage">slippage</Term> and{' '}
+                  <strong>Realism Mode</strong> — itemised <Term id="spread">costs</Term>, <Term id="slippage">slippage</Term> and{' '}
                   <Term id="settlement">settlement</Term> delays. <em>On by default; recommended for honest numbers.</em>
+                  {!realism && <span className="tiny dim"> Off — fills will be labelled <strong>idealized</strong> (no fees, spread or slippage).</span>}
                 </span>
               </label>
             </div>
@@ -175,34 +222,52 @@ export function Onboarding({ store }: { store: AppStore }) {
               ))}
             </div>
 
-            <div className="card">
-              <div className="field">
-                <label htmlFor="apikey">Your API key (P1 — never bundled with the app)</label>
-                <input
-                  id="apikey"
-                  type="password"
-                  autoComplete="off"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="paste your free-tier key"
-                />
-                <span className="hint">
-                  <strong>S3:</strong> the key is stored only on this device. Don't use a key tied to a paid plan if this is a shared device.
-                </span>
-              </div>
-              <div className="row">
-                <button className="btn" onClick={testKey} disabled={apiKey.trim().length < 5 || testing}>
-                  {testing ? 'Testing…' : 'Test key'}
-                </button>
-                {keyTest && (
-                  <span className={keyTest.ok ? 'badge ok' : 'badge warn'} role="status">
-                    {keyTest.ok ? '✓ key works' : `✗ ${keyTest.message}`}
+            {requiresKey ? (
+              <div className="card">
+                <div className="field">
+                  <label htmlFor="apikey">Your API key (never bundled with the app)</label>
+                  <input
+                    id="apikey"
+                    type="password"
+                    autoComplete="off"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="paste your free-tier key"
+                  />
+                  <span className="hint">
+                    The key is stored only on this device. Don't use a key tied to a paid plan if this is a shared device.
                   </span>
-                )}
+                </div>
+                <div className="row">
+                  <button className="btn" onClick={testKey} disabled={apiKey.trim().length < 5 || testing}>
+                    {testing ? 'Testing…' : 'Test key'}
+                  </button>
+                  {keyTest && (
+                    <span className={keyTest.ok ? 'badge ok' : 'badge warn'} role="status">
+                      {keyTest.ok ? '✓ key works' : `✗ ${keyTest.message}`}
+                    </span>
+                  )}
+                </div>
+                {keyTest?.plan && <p className="tiny dim">{keyTest.plan}</p>}
+                {keyTest?.ok && <p className="tiny dim">Usage plan recorded so the app can respect the rate limits.</p>}
               </div>
-              {keyTest?.plan && <p className="tiny dim">{keyTest.plan}</p>}
-              {keyTest?.ok && <p className="tiny dim">Usage plan recorded so the app can respect the rate limits (P5).</p>}
-            </div>
+            ) : (
+              <div className="card">
+                <p className="small">
+                  <strong>No API key required.</strong> {store.providers().find((p) => p.id === providerId)?.keylessNote}
+                </p>
+                <div className="row">
+                  <button className="btn" onClick={testKey} disabled={testing}>
+                    {testing ? 'Testing…' : 'Test connection'}
+                  </button>
+                  {keyTest && (
+                    <span className={keyTest.ok ? 'badge ok' : 'badge warn'} role="status">
+                      {keyTest.ok ? '✓ reachable' : `✗ ${keyTest.message}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {error && <div className="notice error" role="alert">{error}</div>}
 

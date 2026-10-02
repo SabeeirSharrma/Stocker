@@ -7,7 +7,7 @@
  *    data is cached by the app in IndexedDB with TTL + stale labelling (C1–C3)
  */
 
-const CACHE = 'stocker-shell-v1';
+const CACHE = 'stocker-shell-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {

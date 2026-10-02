@@ -32,7 +32,7 @@ export const KNOWN_LIMITS: { title: string; body: string }[] = [
   { title: 'Data may be delayed', body: 'Free data tiers usually deliver delayed prices (often 15 minutes). Every price shows its timestamp so you can see exactly how old it is.' },
   { title: 'Simulated fills are optimistic', body: 'Real markets have order-book depth, partial fills and fast moves. This simulator fills instantly at the candle price — real fills are often worse.' },
   { title: 'No real losses, no real pressure', body: 'A simulation cannot reproduce the stress of risking real money. Emotional discipline is the part no simulator can teach.' },
-  { title: 'All estimates may differ from reality', body: 'Costs, taxes, settlement cycles and market rules change and vary by broker and jurisdiction. Treat every number here as an estimate (D5).' },
+  { title: 'All estimates may differ from reality', body: 'Costs, taxes, settlement cycles and market rules change and vary by broker and jurisdiction. Treat every number here as an estimate.' },
 ];
 
 /* ------------------------------------------------- readiness checklist (RM11) */

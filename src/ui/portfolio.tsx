@@ -84,7 +84,7 @@ export function Portfolio({
           </div>
           <div className="kv">
             <span className="k">
-              Pending settlement <span className="tiny dim">(T+1 · RM5)</span>
+              Pending settlement <span className="tiny dim">(T+1)</span>
             </span>
             <span className="v">{v.unsettledMinor > 0 ? <Money minor={v.unsettledMinor} currency={base} /> : '—'}</span>
           </div>
@@ -106,7 +106,14 @@ export function Portfolio({
 
         {st && (
           <div className="notice info small">
-            US market is <strong>{st.isOpenNow ? 'open' : 'closed'}</strong> — session {st.sessionDate}. Orders placed while closed queue for the next open (M3/R2).
+            US market is <strong>{st.isOpenNow ? 'open' : 'closed'}</strong> — session {st.sessionDate}. Orders placed while closed queue for the next open.
+          </div>
+        )}
+
+        {acct && !acct.settings.realismMode && (
+          <div className="notice warn small" role="status">
+            <strong>Realism Mode is off</strong> — fills are <strong>idealized</strong>: no fees, spread or slippage are
+            applied, so results look friendlier than real trading. Turn Realism Mode on in Settings.
           </div>
         )}
 
@@ -128,7 +135,7 @@ export function Portfolio({
           <h2>Value over time</h2>
           <LineChart series={valueSeries} ariaLabel="Portfolio value by session" formatY={(y) => `${(y / 100).toFixed(0)}`} />
           <div className="tiny dim" style={{ marginTop: 6 }}>
-            Reconstructed daily from your fills and market closes (R1). Missing days are skipped, never guessed.
+            Reconstructed daily from your fills and market closes. Missing days are skipped, never guessed.
           </div>
         </div>
 
@@ -179,12 +186,12 @@ export function Portfolio({
 
           {v.rows.some((r) => r.flags.length > 0) && (
             <div className="tiny dim" style={{ marginTop: 8 }}>
-              ⚠ Some positions show flags: {v.rows.flatMap((r) => r.flags).filter((f, i, a) => a.indexOf(f) === i).join(', ')} — total return may exclude dividends (X3).
+              ⚠ Some positions show flags: {v.rows.flatMap((r) => r.flags).filter((f, i, a) => a.indexOf(f) === i).join(', ')} — total return may exclude dividends.
             </div>
           )}
           {v.missingPrices.length > 0 && (
             <div className="notice warn small" style={{ marginTop: 8 }}>
-              Missing prices for {v.missingPrices.join(', ')} — valued at 0 until data is available, never fabricated (X4).
+              Missing prices for {v.missingPrices.join(', ')} — valued at 0 until data is available, never fabricated.
             </div>
           )}
         </div>

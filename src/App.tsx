@@ -16,7 +16,7 @@ import { Orders } from './ui/orders';
 import { Performance } from './ui/performance';
 import { Learn } from './ui/learn';
 import { Settings } from './ui/settings';
-import { BottomNav, type Tab, useStore } from './ui/common';
+import { BottomNav, GlossarySheet, type Tab, useStore } from './ui/common';
 import { DISCLAIMER_SHORT } from './teaching/content';
 
 export function App({ store }: { store: AppStore }) {
@@ -56,7 +56,12 @@ export function App({ store }: { store: AppStore }) {
   }
 
   if (!store.state.account || !store.state.meta.disclaimerAckAtUtc) {
-    return <Onboarding store={store} />;
+    return (
+      <>
+        <Onboarding store={store} />
+        <GlossarySheet />
+      </>
+    );
   }
 
   function goTab(t: Tab) {
@@ -82,13 +87,13 @@ export function App({ store }: { store: AppStore }) {
 
       {status.offline && (
         <div className="notice warn small" style={{ margin: '10px 16px 0' }} role="status">
-          Offline — showing cached data, clearly marked when stale (A2). Your orders and history remain available.
+          Offline — showing cached data, clearly marked when stale. Your orders and history remain available.
         </div>
       )}
 
       {status.reconRunning && (
         <div className="notice info small" style={{ margin: '10px 16px 0' }} role="status">
-          Reconstructing your history from market data (R1)… your snapshots stay consistent while it runs.
+          Reconstructing your history from market data… your snapshots stay consistent while it runs.
         </div>
       )}
 
@@ -146,6 +151,8 @@ export function App({ store }: { store: AppStore }) {
       )}
 
       <div className="tiny dim center" style={{ padding: '4px 16px 8px' }}>{DISCLAIMER_SHORT}</div>
+
+      <GlossarySheet />
     </div>
   );
 }

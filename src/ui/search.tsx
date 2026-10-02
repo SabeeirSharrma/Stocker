@@ -66,7 +66,7 @@ export function Search({
 
         {store.status.offline && (
           <div className="notice warn small">
-            You appear to be offline. Showing whatever was cached — results may be missing or stale (A2).
+            You appear to be offline. Showing whatever was cached — results may be missing or stale.
           </div>
         )}
         {error && <div className="notice error small">{error}</div>}
@@ -119,7 +119,7 @@ export function Search({
                       {q && <Freshness atUtc={q.atUtc} stale={q.stale} delayed={q.delayed} provider={q.provider} />}
                     </span>
                     <span className="right">
-                      <span className="badge" title="Native currency (I2)">{i.currency}</span>
+                      <span className="badge" title="Native currency">{i.currency}</span>
                       <div className="tiny dim">{i.assetType.toUpperCase()}</div>
                     </span>
                   </button>
